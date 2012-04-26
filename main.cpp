@@ -300,10 +300,10 @@ void split(const std::string & line, std::vector<std::string> & vectorExplosion)
 }
 
 
-bool sortingComp(timingInformation a, timingInformation b){
+/*bool sortingComp(timingInformation a, timingInformation b){
 	if(a.finishTime < b.finishTime) return true;
 	return false;
-}
+}*/
 
 int main(int argc, char * argv[]){
 
@@ -325,6 +325,7 @@ int main(int argc, char * argv[]){
 	inputFile.open(argv[1]);
 	if(inputFile.is_open()){
 		bool first = true;
+		unsigned int max;
 		while(inputFile.eof() == false){
 			std::getline(inputFile, readBuffer);
 			if(readBuffer.length() == 0){
@@ -347,15 +348,21 @@ int main(int argc, char * argv[]){
 				info.size = size;
 				info.startTime = atoi(explodedLine[q].c_str());
 				info.finishTime = atoi(explodedLine[q+1].c_str());
+				if(max < info.finishTime)
+					max = info.finishTime;
 				timeline.push_back(info);
 			}
 		}
 
-		std::sort(timeline.begin(), timeline.end(), sortingComp);
-
+		unsigned int printNext = 0;
 		while(true){
-			if(globalTime >= timeline[timeline.size() - 1].finishTime || timeline.size() == 0){
+			if(timeline.size() == 0){
 				break;
+			}
+			for(size_t x = 0; x < timeline.size(); x++){
+				if(timeline[x].finishTime == globalTime){
+					deleteMemory(timeline[x].symbol);
+				}
 			}
 			for(size_t x = 0; x < timeline.size(); x++){
 				if(timeline[x].startTime == globalTime){
@@ -378,18 +385,27 @@ int main(int argc, char * argv[]){
 						std::cerr << "OUT-OF-MEMORY\n";
 						return 1;
 					}
-				}else if(timeline[x].finishTime == globalTime){
-					deleteMemory(timeline[x].symbol);
 				}
 			}
 
 
-			if(globalTime == 0){
+			if(globalTime == printNext){
 				printMemory();
+				if(printNext >= max){
+					std::cout << "End of simulation\n";
+					break;
+				}
+				std::cin >> printNext;
+				if(printNext == 0){
+					break;
+				}
+				while(printNext < globalTime){
+					std::cout << "Not a valid time to print...enter again\n";
+					std::cin >> printNext;
+				}
 			}
 			globalTime++;
 		}
-		printMemory();
 	}else{
 		std::cerr << "Error cannot open input file, quitting...\n";
 		return 1;
