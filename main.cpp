@@ -266,13 +266,29 @@ int addWorst(char symbol, int size, int done=0){
 }
 
 
+int addNoncontig(char symbol, int size){
+	int avail = 0;
+	for(size_t i = 0; i < memory.size(); i++){
+		if(memory[i] == '.'){
+			avail++;
+		}
+	}
 
+	if(avail < size) return -1;
+	for(size_t i = 0; i < memory.size() && size > 0; i++){
+		if(memory[i] == '.'){
+			memory[i] = symbol;
+			size--;
+		}
+	}
+	return 0;
+}
 
 
 void split(const std::string & line, std::vector<std::string> & vectorExplosion){
 	size_t offset = 0;
 	size_t position;
-	while( (position = line.find_first_of(" \n", offset))){
+	while( (position = line.find_first_of(" \t\n", offset))){
 		if(position == std::string::npos){
 			position = line.length();
 			vectorExplosion.push_back(line.substr(offset, position-offset));
@@ -352,6 +368,8 @@ int main(int argc, char * argv[]){
 						res = addWorst(timeline[x].symbol, timeline[x].size);
 					}else if(type == "next"){
 						res = addNext(timeline[x].symbol, timeline[x].size);
+					}else if(type == "noncontig"){
+						res = addNoncontig(timeline[x].symbol, timeline[x].size);
 					}else{
 						std::cerr << "Unknown algorithm type, quitting...\n";
 						return 1;
