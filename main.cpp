@@ -1,3 +1,11 @@
+/*
+
+Colin Steifel
+Greg Yauney
+Operating systems project 2
+
+*/
+
 #include <vector>
 #include <iostream>
 #include <string>
@@ -162,7 +170,48 @@ int addBest(char symbol, int size, int done=0){
 	}
 }
 
+int addWorst(char symbol, int size, int done=0){
+	bool inserted = false;
+	int bestStart = -1;
+	int bestAvailable = -1;
+	for(size_t i = 0; i < memory.size(); i++){
+		size_t available = 0;
+		if(memory[i] == '.'){
+			for(size_t j = i; j < memory.size(); j++){
+				if(memory[j] == '.'){
+					++available;
+				}else{	
+					break;
+				}
+			}
 
+		}
+
+		if(available >= (size_t) size){
+			if(bestAvailable < (int) available || bestStart == -1){
+				bestStart = i;
+				bestAvailable = available;
+			}
+		}
+		if(memory[i] == '.')
+			i = i + available;
+	}
+
+	if(bestStart != -1){
+		for(size_t x = 0; x < (size_t) size; x++){
+			memory[bestStart+x] = symbol;
+		}
+		inserted = true;
+		return 0;
+	}
+
+	if(!inserted && done == 0){
+		defragment();
+		return addFirst(symbol, size, 1);
+	}else{
+		return -1;
+	}
+}
 
 void split(const std::string & line, std::vector<std::string> & vectorExplosion){
 	size_t offset = 0;
@@ -243,6 +292,8 @@ int main(int argc, char * argv[]){
 						res = addFirst(timeline[x].symbol, timeline[x].size);
 					}else if(type == "best"){
 						res = addBest(timeline[x].symbol, timeline[x].size);
+					}else if(type == "worst"){
+						res = addWorst(timeline[x].symbol, timeline[x].size);
 					}else{
 						std::cerr << "Unknown algorithm type, quitting...\n";
 						return 1;
