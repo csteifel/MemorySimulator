@@ -4,6 +4,7 @@
 #include <fstream>
 #include <stdlib.h>
 #include <stdio.h>
+#include <algorithm>
 
 struct timingInformation {
 	unsigned int startTime;
@@ -118,10 +119,24 @@ int addFirst(char symbol, int size, int done=0){
 
 
 void split(const std::string & line, std::vector<std::string> & vectorExplosion){
-	
+	size_t offset = 0;
+	size_t position;
+	while( (position = line.find_first_of(" \n", offset))){
+		if(position == std::string::npos){
+			position = line.length();
+			vectorExplosion.push_back(line.substr(offset, position-offset));
+			break;
+		}
+		vectorExplosion.push_back(line.substr(offset, position-offset));
+		offset = position+1;
+	}
 }
 
 
+bool sortingComp(timingInformation a, timingInformation b){
+	if(a.finishTime < b.finishTime) return true;
+	return false;
+}
 
 int main(int argc, char * argv[]){
 
@@ -129,7 +144,8 @@ int main(int argc, char * argv[]){
 		std::cerr << "Error usage: " << argv[0] << " <process-file> { first | best | next | worst }\n";
 		return 1;
 	}
-
+	
+	std::string type = "first";
 	//Initialize operating system memory
 	for(int i = 0; i < 80; i++){
 		memory[i] = '#';
@@ -138,7 +154,7 @@ int main(int argc, char * argv[]){
 	std::vector<struct timingInformation> timeline;
 	std::string readBuffer;
 	std::ifstream inputFile;
-	//int numProcesses = 0;
+	int numProcesses = 0;
 	inputFile.open(argv[1]);
 	if(inputFile.is_open()){
 		bool first = true;
@@ -148,6 +164,7 @@ int main(int argc, char * argv[]){
 				break;
 			}
 			if(first){
+				numProcesses = atoi(readBuffer.c_str());
 				first = false;
 				continue;
 			}
@@ -155,27 +172,41 @@ int main(int argc, char * argv[]){
 			char symbol;
 			int size;
 			int startTime;
-
 			std::vector<std::string> explodedLine;
-
 			split(readBuffer, explodedLine);
-			
-			while(false){
-				std::cout << "ADDING" << std::endl;
+			symbol = explodedLine[0][0];
+			size = atoi(explodedLine[1].c_str());
+			for(size_t q = 2; q < explodedLine.size(); q+=2){
 				struct timingInformation info;
 				info.symbol = symbol;
 				info.size = size;
-				info.startTime = startTime;
+				info.startTime = atoi(explodedLine[q].c_str());
+				info.finishTime = atoi(explodedLine[q+1].c_str());
 				timeline.push_back(info);
 			}
 		}
 
-		std::cout << timeline.size() << std::endl;
-		
-		while(false){
-			if(globalTime > timeline[timeline.size() - 1].finishTime || timeline.size() == 0){
+		std::sort(timeline.begin(), timeline.end(), sortingComp);
+
+		while(true){
+			if(globalTime >= timeline[timeline.size() - 1].finishTime || timeline.size() == 0){
 				break;
 			}
+			for(size_t x = 0; x < timeline.size(); x++){
+				if(timeline[x].startTime == globalTime){
+
+					if(type == "first"){
+						addFirst(timeline[x].symbol, timeline[x].size);
+					}else{
+						std::cerr << "Unknown algorithm type, quitting...\n";
+						return 1;
+					}
+				}else if(timeline[x].finishTime == globalTime){
+					deleteMemory(timeline[x].symbol);
+				}
+			}
+
+
 			if(globalTime == 0){
 				printMemory();
 			}
