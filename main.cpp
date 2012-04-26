@@ -118,6 +118,52 @@ int addFirst(char symbol, int size, int done=0){
 }
 
 
+
+int addBest(char symbol, int size, int done=0){
+	bool inserted = false;
+	int bestStart = -1;
+	int bestAvailable = -1;
+	for(size_t i = 0; i < memory.size(); i++){
+		size_t available = 0;
+		if(memory[i] == '.'){
+			for(size_t j = i; j < memory.size(); j++){
+				if(memory[j] == '.'){
+					++available;
+				}else{	
+					break;
+				}
+			}
+
+		}
+
+		if(available >= (size_t) size){
+			if(bestAvailable > (int) available || bestStart == -1){
+				bestStart = i;
+				bestAvailable = available;
+			}
+		}
+		if(memory[i] == '.')
+			i = i + available;
+	}
+
+	if(bestStart != -1){
+		for(size_t x = 0; x < (size_t) size; x++){
+			memory[bestStart+x] = symbol;
+		}
+		inserted = true;
+		return 0;
+	}
+
+	if(!inserted && done == 0){
+		defragment();
+		return addFirst(symbol, size, 1);
+	}else{
+		return -1;
+	}
+}
+
+
+
 void split(const std::string & line, std::vector<std::string> & vectorExplosion){
 	size_t offset = 0;
 	size_t position;
@@ -145,7 +191,7 @@ int main(int argc, char * argv[]){
 		return 1;
 	}
 	
-	std::string type = "first";
+	std::string type = argv[2]; 
 	//Initialize operating system memory
 	for(int i = 0; i < 80; i++){
 		memory[i] = '#';
@@ -154,7 +200,7 @@ int main(int argc, char * argv[]){
 	std::vector<struct timingInformation> timeline;
 	std::string readBuffer;
 	std::ifstream inputFile;
-	int numProcesses = 0;
+	//int numProcesses = 0;
 	inputFile.open(argv[1]);
 	if(inputFile.is_open()){
 		bool first = true;
@@ -164,14 +210,12 @@ int main(int argc, char * argv[]){
 				break;
 			}
 			if(first){
-				numProcesses = atoi(readBuffer.c_str());
 				first = false;
 				continue;
 			}
 			
 			char symbol;
 			int size;
-			int startTime;
 			std::vector<std::string> explodedLine;
 			split(readBuffer, explodedLine);
 			symbol = explodedLine[0][0];
@@ -194,11 +238,17 @@ int main(int argc, char * argv[]){
 			}
 			for(size_t x = 0; x < timeline.size(); x++){
 				if(timeline[x].startTime == globalTime){
-
+					int res = 0;
 					if(type == "first"){
-						addFirst(timeline[x].symbol, timeline[x].size);
+						res = addFirst(timeline[x].symbol, timeline[x].size);
+					}else if(type == "best"){
+						res = addBest(timeline[x].symbol, timeline[x].size);
 					}else{
 						std::cerr << "Unknown algorithm type, quitting...\n";
+						return 1;
+					}
+					if(res == -1){
+						std::cerr << "OUT-OF-MEMORY\n";
 						return 1;
 					}
 				}else if(timeline[x].finishTime == globalTime){
