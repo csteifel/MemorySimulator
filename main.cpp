@@ -126,6 +126,58 @@ int addFirst(char symbol, int size, int done=0){
 }
 
 
+int addNext(char symbol, int size, int done=0){
+	bool inserted = false;
+	bool wrap = true;
+	static size_t startFrom;
+	if(startFrom == 0){
+		wrap = false;
+	}
+
+	int i = startFrom;
+	while(i < (int) memory.size()){
+		size_t available = 0;
+		if(memory[i] == '.'){
+			for(size_t j = (size_t) i; j < memory.size(); j++){
+				if(memory[j] == '.'){
+					if((int) available < size){
+						//Not enough available space yet but keep going
+						++available;
+					}else{
+						//There is enough space here
+						break;
+					}
+				}else{
+					break;
+				}
+			}
+
+			//There was enough space so insert the process now
+			if((int) available == size){
+				for(size_t x = 0; (int) x < size; x++){
+					memory[x+i] = symbol;
+				}
+				startFrom = i+size;
+				inserted = true;
+				return 1;
+			}
+		}
+		if(i+1 == (int) memory.size() && wrap){
+			i = 0;
+			wrap = false;
+		}else{
+			i++;
+		}
+	}
+	if(!inserted && done == 0){
+		defragment();
+		return addFirst(symbol, size, 1);
+	}else{
+		return -1;
+	}
+}
+
+
 
 int addBest(char symbol, int size, int done=0){
 	bool inserted = false;
@@ -213,6 +265,10 @@ int addWorst(char symbol, int size, int done=0){
 	}
 }
 
+
+
+
+
 void split(const std::string & line, std::vector<std::string> & vectorExplosion){
 	size_t offset = 0;
 	size_t position;
@@ -294,6 +350,8 @@ int main(int argc, char * argv[]){
 						res = addBest(timeline[x].symbol, timeline[x].size);
 					}else if(type == "worst"){
 						res = addWorst(timeline[x].symbol, timeline[x].size);
+					}else if(type == "next"){
+						res = addNext(timeline[x].symbol, timeline[x].size);
 					}else{
 						std::cerr << "Unknown algorithm type, quitting...\n";
 						return 1;
